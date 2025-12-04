@@ -90,7 +90,6 @@ const styles = {
     outline: 'none',
     transition: 'all 0.2s ease',
   }),
-  // Updated Button Styles for Better UI
   button: (variant = 'primary') => ({
     padding: '12px 24px',
     borderRadius: '12px',
@@ -101,7 +100,6 @@ const styles = {
     gap: '10px',
     fontWeight: '600',
     fontSize: '14px',
-    // Gradient for primary button
     background: variant === 'danger' ? '#dc2626' : variant === 'secondary' ? '#27272a' : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
     color: '#fff',
     transition: 'transform 0.1s, box-shadow 0.2s',
@@ -242,8 +240,16 @@ const ScreenAssistant = () => {
   const startRecording = () => {
     if (!stream) return;
     chunks.current = [];
+    // More robust MIME type checking
     const mimeTypes = ['video/webm;codecs=vp9', 'video/webm', 'video/mp4'];
-    const type = mimeTypes.find(t => MediaRecorder.isTypeSupported(t)) || '';
+    let type = '';
+    for (const t of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(t)) {
+            type = t;
+            break;
+        }
+    }
+    
     const recorder = new MediaRecorder(stream, { mimeType: type });
     
     recorder.ondataavailable = e => { if (e.data.size > 0) chunks.current.push(e.data); };
@@ -314,6 +320,7 @@ const ScreenAssistant = () => {
 
   const renderHome = () => (
     <div style={styles.content}>
+      {/* Video Canvas */}
       <div style={styles.colLeft}>
         {!stream ? (
           <div style={{ textAlign: 'center', color: '#52525b' }}>
@@ -327,45 +334,50 @@ const ScreenAssistant = () => {
         ) : (
           <>
             <video ref={videoRef} autoPlay muted style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            <div style={{ position: 'absolute', bottom: '30px', display: 'flex', gap: '15px', padding: '10px', backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: '12px', backdropFilter: 'blur(10px)', border: '1px solid #333' }}>
+            
+            {/* Overlay Controls */}
+            <div style={{ position: 'absolute', bottom: '32px', display: 'flex', gap: '12px', padding: '8px', backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: '12px', backdropFilter: 'blur(8px)', border: '1px solid #27272a' }}>
               <button style={styles.button(isRecording ? 'danger' : 'secondary')} onClick={isRecording ? stopRecording : startRecording}>
-                {isRecording ? <StopCircle size={20} color="#fff"/> : <Video size={20} color="#fff"/>}
-                {isRecording ? "Stop Rec" : "Record"}
+                {isRecording ? <StopCircle size={18} color="#fff"/> : <Video size={18} color="#fff"/>}
+                {isRecording ? "Stop Recording" : "Record Session"}
               </button>
               <button style={styles.button('secondary')} onClick={stopShare}>
-                <X size={20} color="#fff" /> Stop Share
+                <X size={18} color="#fff" /> Stop Share
               </button>
             </div>
           </>
         )}
+        
         {loading && (
-          <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', zIndex: 10 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
-              <Loader2 size={50} className="animate-spin" color="#3b82f6" />
-              <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#fff' }}>Analyzing...</span>
+          <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6', backdropFilter: 'blur(2px)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+              <Loader2 size={48} className="animate-spin" color="#3b82f6" />
+              <span style={{ fontWeight: '600', color: '#fff' }}>Analyzing Visual Data...</span>
             </div>
           </div>
         )}
       </div>
 
+      {/* Chat Panel */}
       <div style={styles.colRight}>
-        <div style={{ padding: '20px', borderBottom: '1px solid #27272a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#18181b' }}>
-          <span style={{ fontWeight: 'bold', color: '#fff', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Zap size={18} fill="#eab308" color="#eab308" /> Live Assistant
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #27272a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#18181b' }}>
+          <span style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
+            <Zap size={16} fill="#eab308" color="#eab308" /> Live Analysis
           </span>
-          <button onClick={() => setMessages([])} title="Clear Chat" style={{ background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={18} color="#71717a"/></button>
+          <button onClick={() => setMessages([])} title="Clear" style={{ background: 'none', border: 'none', color: '#71717a', cursor: 'pointer' }}><Trash2 size={16} color="#71717a" /></button>
         </div>
 
         <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           {messages.length === 0 && (
-            <div style={{ textAlign: 'center', color: '#52525b', marginTop: '50px' }}>
-              <Cpu size={50} style={{ opacity: 0.3, margin: '0 auto 20px' }} color="#71717a" />
+            <div style={{ textAlign: 'center', color: '#52525b', marginTop: '60px' }}>
+              <Cpu size={48} style={{ opacity: 0.2, margin: '0 auto 16px' }} color="#71717a" />
               <p>No analysis yet.</p>
+              <p style={{ fontSize: '12px' }}>Click "Analyze" to read the screen.</p>
             </div>
           )}
           {messages.map((m, i) => (
             <div key={i} style={styles.chatBubble(m.role)}>
-              <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '6px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {m.role === 'ai' ? 'AI Assistant' : 'You'} • {m.time}
               </div>
               <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
@@ -374,7 +386,6 @@ const ScreenAssistant = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* UPDATED INPUT AREA */}
         <div style={styles.inputContainer}>
           <input 
             style={styles.input}
@@ -383,7 +394,7 @@ const ScreenAssistant = () => {
             onChange={e => setPrompt(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && analyzeScreen()}
           />
-          <button style={{ ...styles.button('primary'), padding: '14px 20px', borderRadius: '12px' }} onClick={analyzeScreen} disabled={loading}>
+          <button style={{ ...styles.button('primary'), padding: '12px 16px' }} onClick={analyzeScreen} disabled={loading}>
             {loading ? <Loader2 size={20} className="animate-spin" color="#fff"/> : <Send size={20} color="#fff" />}
           </button>
         </div>
@@ -392,30 +403,29 @@ const ScreenAssistant = () => {
   );
 
   const renderLibrary = () => (
-    <div style={{ padding: '40px', height: '100%', overflowY: 'auto', backgroundColor: '#09090b' }}>
+    <div style={{ padding: '32px', height: '100%', overflowY: 'auto', backgroundColor: '#09090b' }}>
       {playbackSession ? (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <button onClick={() => setPlaybackSession(null)} style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', padding: 0 }}>
-            <ArrowLeft size={20} color="#a1a1aa" /> Back to Library
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <button onClick={() => setPlaybackSession(null)} style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', padding: 0 }}>
+            <ArrowLeft size={16} color="#a1a1aa" /> Back to Library
           </button>
           
-          <div style={{ flex: 1, display: 'flex', gap: '30px', overflow: 'hidden' }}>
+          <div style={{ flex: 1, display: 'flex', gap: '24px', overflow: 'hidden' }}>
             <div style={{ flex: 2, backgroundColor: '#000', borderRadius: '16px', border: '1px solid #27272a', overflow: 'hidden' }}>
-              {/* Force re-render with key */}
-              <VideoPlayer key={playbackSession.id} blob={playbackSession.blob} />
+              <VideoPlayer blob={playbackSession.blob} />
             </div>
             
-            <div style={{ flex: 1, backgroundColor: '#18181b', borderRadius: '16px', border: '1px solid #27272a', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: '350px' }}>
-              <div style={{ padding: '20px', borderBottom: '1px solid #27272a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#fff', fontSize: '16px' }}>
-                <FileText size={20} color="#3b82f6" /> Recorded Chat Log
+            <div style={{ flex: 1, backgroundColor: '#18181b', borderRadius: '16px', border: '1px solid #27272a', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: '300px' }}>
+              <div style={{ padding: '16px', borderBottom: '1px solid #27272a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
+                <FileText size={16} color="#3b82f6" /> Recorded Chat
               </div>
-              <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+              <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
                 {playbackSession.chat.length === 0 ? (
-                  <p style={{ color: '#52525b', textAlign: 'center', marginTop: '30px' }}>No chat recorded in this session.</p>
+                  <p style={{ color: '#52525b', textAlign: 'center', marginTop: '20px' }}>No chat recorded in this session.</p>
                 ) : (
                   playbackSession.chat.map((m, i) => (
                     <div key={i} style={styles.chatBubble(m.role)}>
-                      <div style={{ fontSize: '11px', opacity: 0.6, marginBottom: '6px' }}>{m.role.toUpperCase()}</div>
+                      <div style={{ fontSize: '11px', opacity: 0.6, marginBottom: '4px' }}>{m.role.toUpperCase()}</div>
                       <div>{m.text}</div>
                     </div>
                   ))
@@ -426,30 +436,30 @@ const ScreenAssistant = () => {
         </div>
       ) : (
         <>
-          <h2 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '15px', color: '#fff' }}>
-            <Database size={32} color="#3b82f6" /> Recorded Sessions
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '12px', color: '#fff' }}>
+            <Database size={24} color="#3b82f6" /> Recorded Sessions
           </h2>
           
           {sessions.length === 0 ? (
-            <div style={{ padding: '80px', textAlign: 'center', border: '2px dashed #27272a', borderRadius: '20px', color: '#52525b' }}>
-              <Video size={60} style={{ opacity: 0.5, marginBottom: '20px' }} color="#52525b" />
-              <p style={{ fontSize: '18px' }}>Your recorded sessions will appear here.</p>
+            <div style={{ padding: '64px', textAlign: 'center', border: '2px dashed #27272a', borderRadius: '16px', color: '#52525b' }}>
+              <Video size={48} style={{ opacity: 0.5, marginBottom: '16px' }} color="#52525b" />
+              <p>No recordings yet.</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '30px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
               {sessions.map(s => (
                 <div key={s.id} onClick={() => setPlaybackSession(s)} style={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s', position: 'relative' }}>
-                  <div style={{ height: '180px', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Play size={60} color="#ffffff40" />
+                  <div style={{ height: '160px', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Play size={48} color="#ffffff40" />
                   </div>
-                  <div style={{ padding: '20px' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#fff' }}>{s.date}</div>
-                    <div style={{ fontSize: '14px', color: '#a1a1aa', marginTop: '6px' }}>{s.chat.length} chat messages</div>
+                  <div style={{ padding: '16px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{s.date}</div>
+                    <div style={{ fontSize: '12px', color: '#a1a1aa', marginTop: '4px' }}>{s.chat.length} messages</div>
                     <button 
                       onClick={(e) => { e.stopPropagation(); dbOp('readwrite', store => store.delete(s.id)).then(loadLibrary); }}
-                      style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '10px', padding: '8px', cursor: 'pointer' }}
+                      style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '8px', padding: '8px', color: '#ef4444', cursor: 'pointer' }}
                     >
-                      <Trash2 size={20} color="#ef4444" />
+                      <Trash2 size={16} color="#ef4444" />
                     </button>
                   </div>
                 </div>
@@ -463,30 +473,33 @@ const ScreenAssistant = () => {
 
   return (
     <div style={styles.app}>
+      {/* SIDEBAR */}
       <div style={styles.sidebar}>
         <div style={{ width: '56px', height: '56px', backgroundColor: '#2563eb', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', marginBottom: '20px' }}>
           <Cpu size={32} color="#fff" />
         </div>
         
+        {/* ICONS WITH EXPLICIT COLOR PROPS TO FORCE VISIBILITY */}
         <button style={styles.navBtn(activeTab === 'home')} onClick={() => setActiveTab('home')} title="Workspace">
-          <Layout size={32} color={activeTab === 'home' ? '#fff' : '#a1a1aa'} />
+          <Layout size={32} color={activeTab === 'home' ? '#fff' : '#71717a'} />
         </button>
         <button style={styles.navBtn(activeTab === 'library')} onClick={() => { setActiveTab('library'); loadLibrary(); }} title="Library">
-          <Database size={32} color={activeTab === 'library' ? '#fff' : '#a1a1aa'} />
+          <Database size={32} color={activeTab === 'library' ? '#fff' : '#71717a'} />
         </button>
         <button style={styles.navBtn(activeTab === 'settings')} onClick={() => setActiveTab('settings')} title="Settings">
-          <Settings size={32} color={activeTab === 'settings' ? '#fff' : '#a1a1aa'} />
+          <Settings size={32} color={activeTab === 'settings' ? '#fff' : '#71717a'} />
         </button>
       </div>
 
+      {/* MAIN */}
       <div style={styles.main}>
         <div style={styles.header}>
-          <h2 style={{ fontSize: '18px', fontWeight: '700', letterSpacing: '0.5px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '600', letterSpacing: '0.5px' }}>
             {activeTab === 'home' ? 'LIVE WORKSPACE' : activeTab === 'library' ? 'LIBRARY' : 'SETTINGS'}
           </h2>
           {isRecording && (
-            <div style={{ padding: '8px 16px', borderRadius: '30px', backgroundColor: '#dc262620', color: '#ef4444', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid #dc262650' }}>
-              <div style={{ width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '50%' }} className="animate-pulse" />
+            <div style={{ padding: '6px 12px', borderRadius: '20px', backgroundColor: '#dc262620', color: '#ef4444', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #dc262650' }}>
+              <div style={{ width: '8px', height: '8px', backgroundColor: '#ef4444', borderRadius: '50%' }} className="animate-pulse" />
               RECORDING
             </div>
           )}
@@ -495,18 +508,18 @@ const ScreenAssistant = () => {
         {activeTab === 'home' && renderHome()}
         {activeTab === 'library' && renderLibrary()}
         {activeTab === 'settings' && (
-          <div style={{ padding: '50px', maxWidth: '600px', margin: '0 auto' }}>
-            <h3 style={{ fontSize: '24px', marginBottom: '30px', fontWeight: 'bold' }}>System Configuration</h3>
-            <div style={{ backgroundColor: '#18181b', padding: '30px', borderRadius: '20px', border: '1px solid #27272a' }}>
-              <label style={{ display: 'block', marginBottom: '15px', fontSize: '15px', color: '#a1a1aa' }}>Gemini API Key</label>
+          <div style={{ padding: '40px', maxWidth: '600px', margin: '0 auto' }}>
+            <h3 style={{ fontSize: '20px', marginBottom: '24px' }}>System Configuration</h3>
+            <div style={{ backgroundColor: '#18181b', padding: '24px', borderRadius: '16px', border: '1px solid #27272a' }}>
+              <label style={{ display: 'block', marginBottom: '12px', fontSize: '14px', color: '#a1a1aa' }}>Gemini API Key</label>
               <input 
                 type="password" 
-                style={{ ...styles.input, width: '100%', marginBottom: '30px', boxSizing: 'border-box' }} 
+                style={{ ...styles.input, width: '100%', marginBottom: '24px', boxSizing: 'border-box' }} 
                 value={apiKey}
                 onChange={e => { setApiKey(e.target.value); localStorage.setItem('gemini_api_key', e.target.value); }}
                 placeholder="Paste your key here..."
               />
-              <button style={{ ...styles.button('primary'), width: '100%', justifyContent: 'center', fontSize: '16px', padding: '14px' }} onClick={() => setActiveTab('home')}>
+              <button style={{ ...styles.button('primary'), width: '100%', justifyContent: 'center' }} onClick={() => setActiveTab('home')}>
                 Save Configuration
               </button>
             </div>
